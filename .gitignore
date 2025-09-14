@@ -12,4 +12,3 @@ credentials.json
 # Ignorar archivos generados por el sistema operativo
 .DS_Store
 
-index.js
