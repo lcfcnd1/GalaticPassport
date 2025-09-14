@@ -1,40 +1,47 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import cloudinary from "cloudinary";
-import { v4 as uuidv4 } from "uuid";
-import dotenv from "dotenv";
+import { v4 as uuidv4 } from 'uuid';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { VertexAI } from '@google-cloud/aiplatform';
+import cloudinary from 'cloudinary';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
-cloudinary.config({
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const vertex_ai = new VertexAI({
+  project: process.env.GCP_PROJECT_ID,
+  location: process.env.GCP_LOCATION,
+});
+
+const imageModel = vertex_ai.preview.getGenerativeModel({
+  model: 'imagegeneration@006',
+});
+
 const themes = [
-  { name: 'Cyberpunk Neon', colors: { accent1: '#00ffff', accent2: '#ff00ff' } },
-  { name: 'Solar Flare', colors: { accent1: '#ff8c00', accent2: '#ff4500' } },
-  { name: 'Matrix Code', colors: { accent1: '#32cd32', accent2: '#00ff7f' } },
-  { name: 'Void Runner', colors: { accent1: '#9370db', accent2: '#ffffff' } }
+  { name: 'Cyberpunk Neon', colors: { accent1: '#00ffff', accent2: '#ff00ff', glow: 'rgba(0, 255, 255, 0.7)', bg1: 'rgba(75, 0, 130, 0.3)', bg2: 'rgba(0, 50, 100, 0.3)' } },
+  { name: 'Solar Flare', colors: { accent1: '#ff8c00', accent2: '#ff4500', glow: 'rgba(255, 140, 0, 0.7)', bg1: 'rgba(139, 0, 0, 0.3)', bg2: 'rgba(100, 40, 0, 0.3)' } },
+  { name: 'Matrix Code', colors: { accent1: '#32cd32', accent2: '#00ff7f', glow: 'rgba(50, 205, 50, 0.7)', bg1: 'rgba(0, 50, 0, 0.3)', bg2: 'rgba(10, 30, 10, 0.3)' } },
+  { name: 'Void Runner', colors: { accent1: '#9370db', accent2: '#ffffff', glow: 'rgba(147, 112, 219, 0.7)', bg1: 'rgba(30, 0, 50, 0.3)', bg2: 'rgba(50, 50, 50, 0.3)' } }
 ];
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { name, likes, language } = req.body;
-    if (!name || !likes || !language)
-      return res.status(400).json({ error: "Name, likes, and language are required." });
+    if (!name || !likes || !language) return res.status(400).json({ error: 'Name, likes, and language are required.' });
 
     const selectedTheme = themes[Math.floor(Math.random() * themes.length)];
+    const textModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-    const imageModel = genAI.getGenerativeModel({ model: "imagen-2.0" });
-
-    // --- Prompt original intacto ---
-    const prompt = `
-**PRIMARY DIRECTIVE: The entire JSON output's text values MUST be in the target language: '${language}'.**
+    // PROMPT ORIGINAL EXACTO
+    const prompt = `**PRIMARY DIRECTIVE: The entire JSON output's text values MUST be in the target language: '${language}'.**
 The ONLY exception is 'passport_image_prompt', which must remain in English.
 Traveler's Name: ${name}
 Traveler's Likes: ${likes}
@@ -55,29 +62,25 @@ Generate a JSON object following these rules:
 }
 `;
 
-    // --- Generar texto ---
     const textResult = await textModel.generateContent(prompt);
     const responseText = await textResult.response.text();
     const cleanedResponse = responseText.replace(/^```json\s*|```\s*$/g, '');
     const passportData = JSON.parse(cleanedResponse);
 
-    // --- Generar imagen ---
-    const imageResult = await imageModel.generateContent({
+    const imageResponse = await imageModel.generateContent({
       prompt: passportData.passport_image_prompt,
-      size: "1024x1024"
+      number_of_images: 1,
     });
-    const imageBase64 = imageResult.response.candidates[0].content.parts[0].inlineData.data;
+    const imageBase64 = imageResponse.images[0].image_bytes.toString('base64');
 
-    // --- Subir a Cloudinary ---
-    const cloudinaryResponse = await cloudinary.uploader.upload(
+    const cloudinaryResponse = await cloudinary.v2.uploader.upload(
       `data:image/png;base64,${imageBase64}`,
-      { folder: "intergalactic-passports", public_id: `passport-${uuidv4()}` }
+      { folder: 'intergalactic-passports', public_id: `passport-${uuidv4()}` }
     );
 
     res.status(200).json({ ...passportData, theme: selectedTheme, imageUrl: cloudinaryResponse.secure_url });
-
   } catch (err) {
-    console.error("Error generating passport:", err);
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/passport:', err);
+    res.status(500).json({ error: 'Failed to generate Intergalactic Passport.', details: err.message });
   }
 }
