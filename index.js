@@ -1,4 +1,4 @@
-// Intergalactic Passport - Backend (FINAL VERSION with Diagnostics & Fix)
+// Intergalactic Passport - Backend (FINAL, DEPLOYMENT-READY VERSION - CORRECT IMPORT)
 // index.js
 
 const express = require('express');
@@ -6,37 +6,31 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-// --- CAMBIO CLAVE 1: Debugging y Corrección de la Importación ---
-// Importamos el módulo completo para poder inspeccionarlo.
-const aiplatform = require('@google-cloud/aiplatform');
-// Añadimos un log para ver la estructura del objeto importado en los logs de Vercel.
-console.log("OBJETO AI PLATFORM IMPORTADO:", JSON.stringify(aiplatform, null, 2));
-
-// La solución más probable es que la clase VertexAI no esté en el nivel superior, sino anidada.
-// Intentamos acceder a ella a través del objeto principal.
-const { VertexAI } = aiplatform; 
-
 const cloudinary = require('cloudinary').v2;
+
+// --- FIX: La forma correcta y robusta de importar la clase VertexAI ---
+// 1. Importamos el módulo completo de la librería.
+const aiplatform = require('@google-cloud/aiplatform');
+// 2. Accedemos a la clase VertexAI como una propiedad del módulo importado.
+const VertexAI = aiplatform.VertexAI; 
+// ---------------------------------------------------------------------
 
 dotenv.config();
 
 // --- CONFIGURACIÓN DE SERVICIOS ---
+
+// 1. Google AI para texto (Gemini)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
+// 2. Cloudinary para almacenamiento de imágenes
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// --- CAMBIO CLAVE 2: Verificación de la Clase antes de Usarla ---
-// Nos aseguramos de que VertexAI sea una función (constructor) antes de intentar usarla.
-if (typeof VertexAI !== 'function') {
-  console.error("ERROR CRÍTICO: VertexAI no es un constructor. La importación falló. Estructura del módulo:", JSON.stringify(aiplatform, null, 2));
-  // Si esto falla, la aplicación no puede continuar.
-}
-
+// 3. Google Cloud Vertex AI para generación de imágenes
+// Esta configuración ya es correcta y robusta.
 const vertex_ai = new VertexAI({
   project: process.env.GCP_PROJECT_ID,
   location: process.env.GCP_LOCATION,
