@@ -108,7 +108,6 @@ export default function Home() {
           href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" 
           rel="stylesheet" 
         />
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
       </Head>
 
       <div className="container">
