@@ -6,7 +6,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@google-cloud/aiplatform": "^3.2.0",
+    "@google-cloud/aiplatform": "^3.23.0",
     "@google/generative-ai": "^0.15.0",
     "cloudinary": "^2.3.0",
     "dotenv": "^16.4.5",

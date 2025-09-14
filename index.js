@@ -1,13 +1,13 @@
-// Intergalactic Passport - Backend (FINAL, COMPLETE, AND CORRECTED VERSION)
+// Intergalactic Passport - Backend (FINAL, DEPLOYMENT-READY VERSION)
 // index.js
 
 const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
-const fs = require('fs'); // Módulo File System para leer el archivo local
 const { v4: uuidv4 } = require('uuid');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { VertexAI } = require('@google-cloud/aiplatform');
+// FIX: La importación correcta para la clase VertexAI
+const { VertexAI } = require('@google-cloud/aiplatform'); 
 const cloudinary = require('cloudinary').v2;
 
 dotenv.config();
@@ -25,26 +25,17 @@ cloudinary.config({
 });
 
 // 3. Google Cloud Vertex AI para generación de imágenes
-const vertexAIConfig = {
+// La librería de Google Cloud está diseñada para encontrar las credenciales automáticamente
+// tanto en el entorno de Vercel como localmente si están configuradas correctamente.
+// Ya no necesitamos la lógica manual con fs.existsSync.
+const vertex_ai = new VertexAI({
   project: process.env.GCP_PROJECT_ID,
   location: process.env.GCP_LOCATION,
-};
+});
 
-// Prioridad 1: Usar la variable de entorno (para Vercel)
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-    console.log("Usando credenciales de Google Cloud desde la variable de entorno.");
-    vertexAIConfig.credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-} 
-// Prioridad 2: Usar el archivo local si existe (para desarrollo)
-else if (fs.existsSync('./credentials.json')) {
-    console.log("Usando credenciales de Google Cloud desde el archivo local credentials.json.");
-    vertexAIConfig.credentials = JSON.parse(fs.readFileSync('./credentials.json', 'utf8'));
-} else {
-    console.warn("ADVERTENCIA: No se encontraron credenciales de Google Cloud. La generación de imágenes fallará.");
-}
-
-const vertex_ai = new VertexAI(vertexAIConfig);
-const imageModel = vertex_ai.preview.getGenerativeModel({ model: 'imagegeneration@006' });
+const imageModel = vertex_ai.preview.getGenerativeModel({
+  model: 'imagegeneration@006',
+});
 
 // --- SERVIDOR EXPRESS ---
 const app = express();
