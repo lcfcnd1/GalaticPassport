@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "../public/style.css";
 
 export default function Home() {
   const [name, setName] = useState("");
