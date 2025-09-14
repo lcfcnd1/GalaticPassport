@@ -1,8 +1,16 @@
 {
+  "name": "intergalactic-passport",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "dotenv": "^17.2.2",
-    "express": "^5.1.0",
+    "@google-cloud/aiplatform": "^3.2.0",
+    "@google/generative-ai": "^0.15.0",
+    "cloudinary": "^2.3.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
     "uuid": "^8.3.2"
   }
 }

@@ -1,2 +1,13 @@
-node_modules
+# .gitignore
+
+# Ignorar dependencias de Node
+node_modules/
+
+# Ignorar el archivo de variables de entorno locales
 .env
+
+# ¡MUY IMPORTANTE! Ignorar el archivo de credenciales de Google
+credentials.json
+
+# Ignorar archivos generados por el sistema operativo
+.DS_Store
