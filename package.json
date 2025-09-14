@@ -1,16 +1,10 @@
 {
   "name": "intergalactic-passport",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-  },
-"dependencies": {
-  "@vendia/serverless-express": "^4.10.2",
-  "@google/generative-ai": "^0.15.0",
-  "cloudinary": "^2.3.0",
-  "dotenv": "^16.4.5",
-  "express": "^4.19.2",
-  "uuid": "^8.3.2"
-}
-  
+  "type": "module",
+  "dependencies": {
+    "@google/generative-ai": "^0.15.0",
+    "cloudinary": "^2.3.0",
+    "uuid": "^8.3.2"
+  }
 }
