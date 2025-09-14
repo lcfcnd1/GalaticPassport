@@ -1,4 +1,4 @@
-// Intergalactic Passport - Backend (FINAL, DEPLOYMENT-READY VERSION - CORRECT IMPORT)
+// Intergalactic Passport - Backend (FINAL, DEPLOYMENT-READY VERSION - Correct Import)
 // index.js
 
 const express = require('express');
@@ -6,31 +6,26 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const cloudinary = require('cloudinary').v2;
 
-// --- FIX: La forma correcta y robusta de importar la clase VertexAI ---
-// 1. Importamos el módulo completo de la librería.
-const aiplatform = require('@google-cloud/aiplatform');
-// 2. Accedemos a la clase VertexAI como una propiedad del módulo importado.
-const VertexAI = aiplatform.VertexAI; 
-// ---------------------------------------------------------------------
+// --- FIX: La forma más robusta y correcta de importar la clase VertexAI ---
+// Accedemos a la clase a través de la exportación versionada 'v1'.
+const { VertexAI } = require('@google-cloud/aiplatform').v1;
+
+const cloudinary = require('cloudinary').v2;
 
 dotenv.config();
 
 // --- CONFIGURACIÓN DE SERVICIOS ---
-
-// 1. Google AI para texto (Gemini)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-// 2. Cloudinary para almacenamiento de imágenes
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 3. Google Cloud Vertex AI para generación de imágenes
-// Esta configuración ya es correcta y robusta.
+// La librería de Google Cloud encuentra las credenciales automáticamente.
+// No necesitamos ninguna lógica especial aquí.
 const vertex_ai = new VertexAI({
   project: process.env.GCP_PROJECT_ID,
   location: process.env.GCP_LOCATION,
