@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intergalactic Passport Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header><h1>[ Intergalactic Passport Terminal ]</h1></header>
+        <form id="passport-form">
+            <div class="form-group"><label for="name">> USER FULL NAME:</label><input type="text" id="name" name="name" required></div>
+            <div class="form-group"><label for="likes">> LIKES/INTERESTS (CSV):</label><input type="text" id="likes" name="likes" required></div>
+            <div class="form-group"><label for="language">> DATA LANGUAGE:</label><select id="language" name="language"><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="ja">日本語</option></select></div>
+            <button type="submit" id="submit-btn">-- GENERATE ID --</button>
+        </form>
+        <div id="loader" class="loader hidden"><div class="spinner"></div><p>> PROCESSING REQUEST...</p></div>
+
+        <div id="error-message" class="error-message hidden"></div>
+
+        <div id="passport-result" class="hidden">
+            <div class="passport-card">
+                <div class="passport-background"></div>
+                <div class="passport-identity">
+                    <div class="passport-photo"><img id="passport-image" src="" alt="ID Photo"></div>
+                    <div id="passport-stamp-container"></div>
+                </div>
+                <div class="passport-info">
+                    <header class="passport-header grid-span-2"><h3 id="passport-name"></h3><p id="passport-space-name"></p></header>
+                    
+                    <!-- CORRECTED GRID LAYOUT -->
+                    <div class="detail-item"><strong id="label-planet"></strong><span id="passport-planet"></span></div>
+                    <div class="detail-item"><strong id="label-species"></strong><span id="passport-species"></span></div>
+                    
+                    <!-- FIX: Removed grid-span-2 to enforce text wrapping -->
+                    <div class="detail-item"><strong id="label-occupation"></strong><span id="passport-occupation"></span></div>
+                    <div></div> <!-- Empty cell for alignment -->
+
+                    <div class="detail-item"><strong id="label-reg-number"></strong><span id="passport-reg-number"></span></div>
+                    <div></div> <!-- Empty cell for alignment -->
+
+                    <div class="detail-item"><strong id="label-tagline"></strong><span id="passport-tagline"></span></div>
+                    <div class="detail-item"><strong id="label-restrictions"></strong><span id="passport-restrictions"></span></div>
+                </div>
+            </div>
+            <a id="twitter-share-btn" href="#" target="_blank" class="share-btn hidden">> TRANSMIT ID TO X-COMMS</a>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // Este script es correcto y no necesita cambios.
+        const form = document.getElementById('passport-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const loader = document.getElementById('loader');
+        const resultDiv = document.getElementById('passport-result');
+        const twitterShareBtn = document.getElementById('twitter-share-btn');
+        const passportCard = document.querySelector('.passport-card');
+        const stampContainer = document.getElementById('passport-stamp-container');
+        const errorDiv = document.getElementById('error-message');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            resultDiv.classList.add('hidden'); twitterShareBtn.classList.add('hidden'); errorDiv.classList.add('hidden'); loader.classList.remove('hidden'); submitBtn.disabled = true;
+
+            setTimeout(async () => {
+                try {
+                    const data = { name: form.elements.name.value, likes: form.elements.likes.value, language: form.elements.language.value, };
+                    const passportResponse = await fetch('/api/passport', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), });
+                    if (!passportResponse.ok) { const err = await passportResponse.json(); throw new Error(`Passport generation failed: ${err.details || passportResponse.statusText}`); }
+                    const passportData = await passportResponse.json();
+                    renderPassport(passportData);
+                    resultDiv.classList.remove('hidden');
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    const canvas = await html2canvas(passportCard, { useCORS: true, backgroundColor: null });
+                    const imageData = canvas.toDataURL('image/png');
+                    const saveImageResponse = await fetch('/api/save-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageData }), });
+                    if (!saveImageResponse.ok) { const err = await saveImageResponse.json(); throw new Error(`Image saving failed: ${err.error || saveImageResponse.statusText}`); }
+                    const { url: savedImageUrl } = await saveImageResponse.json();
+                    const fullShareImageUrl = `${window.location.origin}${savedImageUrl}`;
+                    const twitterLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(passportData.tweet_text)}&url=${encodeURIComponent(fullShareImageUrl)}`;
+                    twitterShareBtn.href = twitterLink;
+                    twitterShareBtn.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Caught Error:', error); errorDiv.textContent = `SYSTEM ERROR: ${error.message}`; errorDiv.classList.remove('hidden');
+                } finally {
+                    loader.classList.add('hidden'); submitBtn.disabled = false;
+                }
+            }, 50);
+        });
+
+        function renderPassport(data) {
+            const theme = data.theme;
+            if (theme && theme.colors) {
+                passportCard.style.setProperty('--accent-color', theme.colors.accent1);
+                passportCard.style.setProperty('--glow-color', theme.colors.glow);
+                passportCard.style.setProperty('--scanline-color-1', theme.colors.bg1);
+                passportCard.style.setProperty('--scanline-color-2', theme.colors.bg2);
+            }
+            document.getElementById('passport-image').src = 'placeholder.png';
+            document.getElementById('passport-name').textContent = data.name;
+            document.getElementById('passport-space-name').textContent = data.space_name;
+            document.getElementById('passport-planet').textContent = data.planet_of_origin;
+            document.getElementById('passport-species').textContent = data.species;
+            document.getElementById('passport-occupation').textContent = data.occupation;
+            document.getElementById('passport-reg-number').textContent = data.registration_number;
+            document.getElementById('passport-tagline').textContent = data.profile_tagline;
+            document.getElementById('passport-restrictions').textContent = data.restrictions;
+            const labels = data.labels;
+            document.getElementById('label-planet').textContent = labels.planet_label;
+            document.getElementById('label-species').textContent = labels.species_label;
+            document.getElementById('label-occupation').textContent = labels.occupation_label;
+            document.getElementById('label-reg-number').textContent = labels.reg_number_label;
+            document.getElementById('label-tagline').textContent = labels.tagline_label;
+            document.getElementById('label-restrictions').textContent = labels.restrictions_label;
+            if (data.passport_stamp_svg) { stampContainer.innerHTML = data.passport_stamp_svg; }
+        }
+    </script>
+</body>
+</html>
